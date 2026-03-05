@@ -55,26 +55,25 @@
                   values: {n: firstTocItem?.to},
                 })}
               </strong>
-            <Tooltip
-              text={$t('offset.skip_tooltip')}
-              position="right"
-              width="w-64"
-            >
-              <span
-                on:click={() => dispatch('skip')}
-                class="bg-gray-50 rounded-lg text-sm border border-gray-300 px-2 py-1 cursor-pointer text-gray-500 hover:text-gray-600 transition-colors"
-                role="button"
-                tabindex="0"
-                on:keydown={(e) => e.key === 'Enter' && dispatch('skip')}
+              <Tooltip
+                text={$t('offset.skip_tooltip')}
+                position="right"
+                width="w-64"
               >
-                {$t('btn.skip_this_item')}
-              </span>
-            </Tooltip>
+                <span
+                  on:click={() => dispatch('skip')}
+                  class="bg-gray-50 rounded-lg text-sm border border-gray-300 px-2 py-1 cursor-pointer text-gray-500 hover:text-gray-600 transition-colors"
+                  role="button"
+                  tabindex="0"
+                  on:keydown={(e) => e.key === 'Enter' && dispatch('skip')}
+                >
+                  {$t('btn.skip_this_item')}
+                </span>
+              </Tooltip>
             </div>
           </div>
-            
-          <p class="mt-4 text-gray-700 text-sm">{$t('offset.instruction')}</p>
-    
+          <p class="mt-4 mb-2 text-gray-700 text-sm">{$t('offset.instruction')}</p>
+
           <div class="flex gap-4 items-center mb-4">
             <label
               for="physical_page_select"

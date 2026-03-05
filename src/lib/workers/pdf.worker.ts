@@ -67,7 +67,7 @@ async function detectTocPages(pdfBytes: ArrayBuffer): Promise<number[]> {
   const loadingTask = pdfjsLib.getDocument({
     data: new Uint8Array(pdfBytes),
     disableFontFace: true,
-    cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+    cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${ pdfjsLib.version }/cmaps/`,
     cMapPacked: true,
   });
 
@@ -439,11 +439,11 @@ function applyLinkAnnotations(
     const targetPage = allPages[boundedIndex];
 
     const ref = doc.context.register(doc.context.obj({
-      Type: 'Annot',
-      Subtype: 'Link',
+      Type: PDFName.of('Annot'),
+      Subtype: PDFName.of('Link'),
       Rect: pa.rect,
       Border: [0, 0, 0],
-      Dest: [targetPage.ref, 'Fit'],
+      Dest: [targetPage.ref, PDFName.of('Fit')],
     }));
 
     const existingAnnots = pa.tocPage.node.get(PDFName.of('Annots')) as PDFArray | undefined;

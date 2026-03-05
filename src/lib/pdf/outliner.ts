@@ -105,10 +105,10 @@ export const setOutline = async (
 
       const destOrAction = (() => {
         if (typeof outline.to === 'string') {
-          return {A: {S: 'URI', URI: PDFHexString.fromText(outline.to)}};
+          return { A: { S: PDFName.of('URI'), URI: PDFHexString.fromText(outline.to) } };
         } else if (typeof outline.to === 'number') {
           const finalIndex = getFinalPageIndex(outline.to);
-          return { Dest: [pageRefs[finalIndex], 'Fit'] };
+          return { Dest: [pageRefs[finalIndex], PDFName.of('Fit')] };
         } else if (Array.isArray(outline.to)) {
           const finalIndex = getFinalPageIndex(outline.to[0]);
           const page = doc.getPage(finalIndex);  // Use correct index
@@ -118,7 +118,7 @@ export const setOutline = async (
           return {
             Dest: [
               pageRefs[finalIndex],
-              'XYZ',
+              PDFName.of('XYZ'),
               width * outline.to[1],
               height * outline.to[2],
               null,
@@ -159,7 +159,7 @@ export const setOutline = async (
   const rootCount = getOpeningCount(outlines);
 
   doc.context.assign(rootRef, doc.context.obj({
-    Type: 'Outlines',
+    Type: PDFName.of('Outlines'),
     ...(rootCount > 0 ? {
       First: refMap.get(outlines[0])!,
       Last: refMap.get(outlines[outlines.length - 1])!,
@@ -168,5 +168,5 @@ export const setOutline = async (
     Count: rootCount,
   }));
 
-  doc.catalog.set(doc.context.obj('Outlines'), rootRef);
+  doc.catalog.set(PDFName.of('Outlines'), rootRef);
 };
