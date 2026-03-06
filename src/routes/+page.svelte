@@ -732,7 +732,8 @@
       firstTocItem = nestedTocItems.length > 0 ? nestedTocItems[0] : null;
 
       if (firstTocItem) {
-        offsetPreviewPageNum = firstTocItem.to;
+        const lastTocPage = tocRanges[0]?.end || firstTocItem.to;
+        offsetPreviewPageNum = Math.min(lastTocPage + 1, originalPdfInstance?.numPages || 1);
         showOffsetModal = true;
       } else {
         tocItems.set(nestedTocItems);
@@ -788,9 +789,7 @@
       pendingTocItems.shift();
       firstTocItem = pendingTocItems.length > 0 ? pendingTocItems[0] : null;
 
-      if (firstTocItem) {
-        offsetPreviewPageNum = firstTocItem.to;
-      } else {
+      if (!firstTocItem) {
         showOffsetModal = false;
         tocItems.set([]);
       }
