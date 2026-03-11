@@ -18,6 +18,7 @@
     {value: 'chinese_simple', label: '一, 二, 三'},
     {value: 'roman_upper', label: 'I, II, III'},
     {value: 'alpha_upper', label: 'A, B, C'},
+    {value: 'none', label: $t('settings.none')},
   ];
 
   function handleChange() {

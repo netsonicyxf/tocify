@@ -1,6 +1,6 @@
 
 export type CounterStyle =
-    'decimal'|'roman_upper'|'alpha_upper'|'chinese_simple';
+  'decimal' | 'roman_upper' | 'alpha_upper' | 'chinese_simple' | 'none';
 
 export interface LevelConfig {
   style: CounterStyle;
@@ -28,6 +28,7 @@ export const DEFAULT_PREFIX_CONFIG: LevelConfig[] = [
 ];
 
 export const convertNum = (num: number, style: CounterStyle): string => {
+  if (style === 'none') return '';
   if (style === 'decimal') return num.toString();
   if (style === 'alpha_upper') return String.fromCharCode(64 + num);
   if (style === 'roman_upper') {
@@ -79,18 +80,23 @@ export function applyCustomPrefix(
       const parentParts = parentPath.map((val) => {
         return convertNum(val, config.style);
       });
-      const parentStr = parentParts.join(config.separator);
+      const parentStr = parentParts.filter(Boolean).join(config.separator);
       const selfStr = convertNum(currentNum, config.style);
-      coreNumber = `${parentStr}${config.separator}${selfStr}`;
+      if (parentStr && selfStr) {
+        coreNumber = `${ parentStr }${ config.separator }${ selfStr }`;
+      } else {
+        coreNumber = parentStr || selfStr;
+      }
     } else {
       coreNumber = convertNum(currentNum, config.style);
     }
 
     const finalPrefix = `${config.prefix}${coreNumber}${config.suffix}`;
+    const titleWithPrefix = finalPrefix ? `${ finalPrefix } ${ item.title }` : item.title;
 
     return {
       ...item,
-      title: `${finalPrefix} ${item.title}`,
+      title: titleWithPrefix,
       children: applyCustomPrefix(
           item.children || [], configs, currentPath, level + 1)
     };

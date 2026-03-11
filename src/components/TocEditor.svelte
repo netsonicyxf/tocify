@@ -187,7 +187,7 @@
     const uid = new ShortUniqueId({length: 10});
 
     lines.forEach((line) => {
-      const match = line.match(/^(\d+(?:\.\d+)*)\s+(.+?)\s+(-?\d+)$/);
+      const match = line.match(/^(\d+(?:\.\d+)*)\s+(.*?)\s+(-?\d+)$/);
       if (match) {
         const [, number, title, pageStr] = match;
         const level = number.split('.').length;
@@ -297,7 +297,7 @@
     const uid = new ShortUniqueId({length: 10});
     const newItems = Array.from({length: count}, (_, i) => ({
       id: uid.randomUUID(),
-      title: $t('toc.new_section_default'),
+      title: '',
       to: startPage + i,
       children: [],
       open: true,
@@ -357,7 +357,7 @@
     $tocItems = deleteItemRecursive($tocItems);
   };
 
-  const TOC_REGEX = /^(\d+(?:\.\d+)*)\s+(.+?)\s+(-?\d+)$/;
+  const TOC_REGEX = /^(\d+(?:\.\d+)*)\s+(.*?)\s+(-?\d+)$/;
 
   $: hasInvalidLines = text
     .split('\n')

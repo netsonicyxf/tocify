@@ -149,7 +149,7 @@
           <input
             id="api_key"
             type="password"
-            class="w-full outline-none placeholder-gray-400 placeholder:italic [&::placeholder]:text-xs "
+            class="w-full outline-none placeholder:text-gray-400 placeholder:italic [&::placeholder]:text-xs "
             placeholder={$t('settings.api_key_placeholder')}
             bind:value={config.apiKey}
             on:input={() => (isSaved = false)}

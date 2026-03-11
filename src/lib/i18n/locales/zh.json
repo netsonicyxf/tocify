@@ -22,6 +22,7 @@
     "api_key_placeholder": "网页内置 key，也可使用自定义 Key",
     "add_numbering": "添加编号",
     "style": "样式",
+    "none": "无",
     "prefix": "前缀",
     "suffix": "后缀",
     "inherit_parent": "继承父级",
