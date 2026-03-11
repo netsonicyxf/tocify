@@ -3,7 +3,17 @@
   import {t} from 'svelte-i18n';
   import rough from 'roughjs';
   import GraphNode from './GraphNode.svelte';
-  import {Sparkles, Loader2, RefreshCw, Maximize2, Minimize2, BrainCircuit, BookOpen, EyeOff} from 'lucide-svelte';
+  import {
+    Sparkles,
+    Loader2,
+    RefreshCw,
+    Maximize2,
+    Minimize2,
+    BrainCircuit,
+    BookOpen,
+    EyeOff,
+    Download,
+  } from 'lucide-svelte';
   import {CARD_W, CARD_H, getRandomPaperColor, computeHierarchicalLayout, getClosestPoints} from '$lib/utils/graph';
   export let items = [];
   export let apiConfig = {apiKey: ''};
@@ -61,7 +71,7 @@
     isLoading = true;
     activeNodeId = null;
 
-  const simplifiedItems = items.map((item) => ({
+    const simplifiedItems = items.map((item) => ({
       id: item.id,
       title: item.title,
       page: item.to || null,
@@ -107,12 +117,31 @@
   function updateCanvasSize() {
     if (graphData.nodes.length > 0) {
       const minX = Math.min(...graphData.nodes.map((n) => n.x));
-      const maxX = Math.max(...graphData.nodes.map((n) => n.x));
-      const maxY = Math.max(...graphData.nodes.map((n) => n.y));
+      let maxX = Math.max(...graphData.nodes.map((n) => n.x));
+      const minY = Math.min(...graphData.nodes.map((n) => n.y));
+      let maxY = Math.max(...graphData.nodes.map((n) => n.y));
+
+      let shifted = false;
 
       if (minX < 50) {
         const offsetX = 50 - minX;
         graphData.nodes.forEach((n) => (n.x += offsetX));
+        viewX -= offsetX * scale;
+        shifted = true;
+      }
+
+      if (minY < 50) {
+        const offsetY = 50 - minY;
+        graphData.nodes.forEach((n) => (n.y += offsetY));
+        viewY -= offsetY * scale;
+        shifted = true;
+      }
+
+      if (shifted) {
+        maxX = Math.max(...graphData.nodes.map((n) => n.x));
+        maxY = Math.max(...graphData.nodes.map((n) => n.y));
+        graphData.nodes = graphData.nodes;
+        requestAnimationFrame(drawWall);
       }
 
       canvasWidth = Math.max(maxX + CARD_W + 200, isFullscreen ? window.innerWidth : 400);
@@ -362,7 +391,7 @@
     graphData.nodes = graphData.nodes;
   }
 
-  function drawArrowHead(parent, prevX, prevY, tipX, tipY, color) {
+  function drawArrowHead(parent, prevX, prevY, tipX, tipY, color, rcInst = rc) {
     const angle = Math.atan2(tipY - prevY, tipX - prevX);
     const arrowLen = 14;
     const arrowWid = 0.5;
@@ -372,7 +401,7 @@
     const yB = tipY - arrowLen * Math.sin(angle + arrowWid);
 
     parent.appendChild(
-      rc.polygon(
+      rcInst.polygon(
         [
           [tipX, tipY],
           [xA, yA],
@@ -405,8 +434,150 @@
     parent.appendChild(t);
   }
 
-  function drawPin(parent, x, y) {
-    parent.appendChild(rc.circle(x, y, 10, {fill: ACTIVE_COLOR, fillStyle: 'solid', stroke: 'none'}));
+  function drawPin(parent, x, y, rcInst = rc) {
+    parent.appendChild(rcInst.circle(x, y, 10, {fill: ACTIVE_COLOR, fillStyle: 'solid', stroke: 'none'}));
+  }
+
+  function handleExportGraph() {
+    if (graphData.nodes.length === 0) return;
+
+    const PADDING = 60;
+    const minX = Math.min(...graphData.nodes.map((n) => n.x));
+    const maxX = Math.max(...graphData.nodes.map((n) => n.x));
+    const minY = Math.min(...graphData.nodes.map((n) => n.y));
+    const maxY = Math.max(...graphData.nodes.map((n) => n.y));
+
+    const width = maxX - minX + CARD_W + PADDING * 2;
+    const height = maxY - minY + CARD_H + PADDING * 2;
+    const viewBox = `${minX - PADDING} ${minY - PADDING} ${width} ${height}`;
+
+    const svgElem = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svgElem.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    svgElem.setAttribute('viewBox', viewBox);
+    svgElem.setAttribute('width', width);
+    svgElem.setAttribute('height', height);
+
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bg.setAttribute('x', minX - PADDING);
+    bg.setAttribute('y', minY - PADDING);
+    bg.setAttribute('width', width);
+    bg.setAttribute('height', height);
+    bg.setAttribute('fill', '#fdfbf7');
+    svgElem.appendChild(bg);
+
+    const rcExport = rough.svg(svgElem);
+
+    const pinsToDraw = new Set();
+    const nodesWithPins = new Set();
+
+    graphData.edges.forEach((edge, idx) => {
+      const src = graphData.nodes.find((n) => n.id === edge.source);
+      const tgt = graphData.nodes.find((n) => n.id === edge.target);
+      if (!src || !tgt) return;
+
+      const {start, end} = getClosestPoints(src, tgt);
+      const x1 = start.x;
+      const y1 = start.y;
+      const x2 = end.x;
+      const y2 = end.y;
+
+      pinsToDraw.add(`${x1},${y1}`);
+      pinsToDraw.add(`${x2},${y2}`);
+      nodesWithPins.add(src.id);
+      nodesWithPins.add(tgt.id);
+
+      const distY = Math.abs(y2 - y1);
+      const distX = Math.abs(x2 - x1);
+      const gravity = 10 + distY * 0.15;
+      const curveDir = idx % 2 === 0 ? 1 : -1;
+      const swing = (10 + distX * 0.05) * curveDir;
+
+      const midX = (x1 + x2) / 2 + swing;
+      const midY = (y1 + y2) / 2 + gravity;
+
+      svgElem.appendChild(
+        rcExport.curve(
+          [
+            [x1, y1],
+            [midX, midY],
+            [x2, y2],
+          ],
+          LINE_DIM,
+        ),
+      );
+
+      drawArrowHead(svgElem, midX, midY, x2, y2, '#e2e8f0', rcExport);
+
+      const labelX = (x1 + x2) / 2 + swing / 2;
+      const labelY = midY;
+      drawEdgeLabel(svgElem, edge.label, labelX, labelY);
+    });
+
+    graphData.nodes.forEach((node) => {
+      const fillStyle = node.isInferred ? 'zigzag' : 'solid';
+      const strokeStyle = node.isInferred ? '#94a3b8' : '#2d3436';
+
+      if (!nodesWithPins.has(node.id)) {
+        pinsToDraw.add(`${node.x + CARD_W / 2},${node.y + 4}`);
+      }
+
+      svgElem.appendChild(
+        rcExport.rectangle(node.x, node.y, CARD_W, CARD_H, {
+          ...ROUGH_OPTS,
+          fill: node.bgColor,
+          fillStyle: fillStyle,
+          stroke: strokeStyle,
+          fillWeight: 1,
+          strokeWidth: node.isInferred ? 1 : 1.5,
+        }),
+      );
+
+      const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+      fo.setAttribute('x', node.x);
+      fo.setAttribute('y', node.y);
+      fo.setAttribute('width', CARD_W);
+      fo.setAttribute('height', CARD_H);
+
+      const div = document.createElement('div');
+      div.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+      div.style.width = '100%';
+      div.style.height = '100%';
+      div.style.display = 'flex';
+      div.style.alignItems = 'center';
+      div.style.justifyContent = 'center';
+      div.style.padding = '12px';
+      div.style.boxSizing = 'border-box';
+      div.style.fontFamily = 'HuiwenMincho, serif';
+      div.style.fontSize = '18px';
+      div.style.fontWeight = 'bold';
+      div.style.color = '#9ca3af';
+      div.style.textAlign = 'center';
+      div.style.lineHeight = '1.25rem';
+      div.style.wordBreak = 'break-word';
+      div.innerText = node.title || '';
+
+      fo.appendChild(div);
+      svgElem.appendChild(fo);
+    });
+
+    pinsToDraw.forEach((coordStr) => {
+      const [px, py] = coordStr.split(',').map(Number);
+      drawPin(svgElem, px, py, rcExport);
+    });
+
+    const serializer = new XMLSerializer();
+    let source = serializer.serializeToString(svgElem);
+
+    const blob = new Blob([source], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title}-knowledge-board.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 </script>
 
@@ -438,7 +609,6 @@
         </span>
       </div>
     {/if}
-
   </div>
 
   {#if !isFullscreen}
@@ -449,27 +619,6 @@
         title={$t('knowledge_board.hide_graph', {default: 'Hide Graph'})}
       >
         <EyeOff size={22} />
-      </button>
-    </div>
-  {/if}
-
-  {#if items.length > 0}
-    <div class="absolute bottom-5 right-24 z-50 flex gap-2">
-      <button
-        on:click={handleGenerateGraph}
-        disabled={isLoading || items.length === 0}
-        class="flex items-center gap-2 text-white px-5 py-2 rounded-lg bg-gradient-to-r from-indigo-400 to-cyan-400 disabled:opacity-50 transition-all active:scale-95 border-2 border-transparent font-['HuiwenMincho'] text-xl shadow-lg"
-      >
-        {#if isLoading}
-          <Loader2
-            class="animate-spin"
-            size={20}
-          />
-          <span>{$t('knowledge_board.btn_connecting')}</span>
-        {:else}
-          <Sparkles size={20} />
-          <span>{$t('knowledge_board.btn_investigate')}</span>
-        {/if}
       </button>
     </div>
   {/if}
@@ -555,16 +704,49 @@
     </div>
   {/if}
 
-  <button
-    on:click={toggleFullscreen}
-    class="absolute bottom-4 right-4 z-50 p-3 rounded-full transition-all hover:scale-110 active:scale-95 text-gray-400"
-  >
-    {#if isFullscreen}
-      <Minimize2 size={30} />
-    {:else}
-      <Maximize2 size={30} />
-    {/if}
-  </button>
+  {#if items.length > 0}
+    <div class="absolute bottom-5 right-20 z-50 flex gap-2">
+      <button
+        on:click={handleGenerateGraph}
+        disabled={isLoading || items.length === 0}
+        class="flex items-center gap-2 text-white px-5 py-2 rounded-lg bg-gradient-to-r from-indigo-400 to-cyan-400 disabled:opacity-50 transition-all active:scale-95 border-2 border-transparent font-['HuiwenMincho'] text-xl shadow-lg"
+      >
+        {#if isLoading}
+          <Loader2
+            class="animate-spin"
+            size={20}
+          />
+          <span>{$t('knowledge_board.btn_connecting')}</span>
+        {:else}
+          <Sparkles size={20} />
+          <span>{$t('knowledge_board.btn_investigate')}</span>
+        {/if}
+      </button>
+
+      {#if graphData.nodes.length > 0}
+        <button
+          on:click={handleExportGraph}
+          class="px-3 active:scale-95 rounded-lg border-2 border-transparent transition-all text-white bg-gradient-to-r from-indigo-400 to-cyan-400"
+          title={$t('knowledge_board.export_graph', {default: 'Export SVG'})}
+        >
+          <Download size={24} />
+        </button>
+      {/if}
+    </div>
+  {/if}
+
+  <div class="absolute bottom-4 right-4 z-50 flex items-center gap-2">
+    <button
+      on:click={toggleFullscreen}
+      class="p-3 rounded-full transition-all hover:scale-110 active:scale-95 text-gray-400"
+    >
+      {#if isFullscreen}
+        <Minimize2 size={30} />
+      {:else}
+        <Maximize2 size={30} />
+      {/if}
+    </button>
+  </div>
 </div>
 
 <style>

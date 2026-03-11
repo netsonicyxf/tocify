@@ -166,6 +166,7 @@
     "error_failed": "Failed to generate board",
     "jump_to_page": "Jump to page {page}",
     "beta": "It's beta now, maybe beta forever",
-    "hide_graph": "Hide Entry"
+    "hide_graph": "Hide Entry",
+    "export_graph": "Export Knowledge Board"
   }
 }
