@@ -29,7 +29,7 @@
     hoveritem: { to: number };
     jumpToPage: { to: number };
   }>();
-  const flipDurationMs = 200;
+  export let flipDurationMs = 200;
 
   let editTitle = item ? item.title : '';
   let editPage = item ? item.to : 1;
@@ -248,6 +248,7 @@
               prefix={currentNumber}
               index={i + 1}
               item={child}
+              {flipDurationMs}
               onUpdate={handleUpdateChild}
               onDelete={handleDeleteChild}
               {onDragStart}

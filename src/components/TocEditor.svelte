@@ -19,7 +19,7 @@
   export let apiConfig = {provider: '', apiKey: ''};
   const dispatch = createEventDispatcher();
 
-  const flipDurationMs = 200;
+  let flipDurationMs = 200;
 
   let text = ``;
   let isUpdatingFromEditor = false;
@@ -307,6 +307,7 @@
   };
 
   const toggleAll = (open: boolean) => {
+    flipDurationMs = 0;
     const updateRecursive = (items: any[]): any[] =>
       items.map((item) => ({
         ...item,
@@ -314,6 +315,11 @@
         children: item.children?.length ? updateRecursive(item.children) : [],
       }));
     $tocItems = updateRecursive($tocItems);
+    tick().then(() => {
+      setTimeout(() => {
+        flipDurationMs = 200;
+      }, 50);
+    });
   };
 
   const expandAll = () => toggleAll(true);
@@ -448,6 +454,7 @@
           <div animate:flip={{duration: flipDurationMs}}>
             <TocItem
               {item}
+              {flipDurationMs}
               showTooltip={item.id === firstItemWithChildrenId}
               onUpdate={updateTocItem}
               onDelete={deleteTocItem}

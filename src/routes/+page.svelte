@@ -8,15 +8,15 @@
   import {init, trackEvent} from '@aptabase/web';
 
   import '../lib/i18n';
-  import { pdfService, tocItems, curFileFingerprint, tocConfig, autoSaveEnabled, type TocConfig } from '../stores';
-  import { PDFService, type PDFState, type TocItem } from '$lib/pdf/service';
-  import { renderQueue } from '../lib/pdf/render-queue';
-  import { setOutline } from '../lib/pdf/outliner';
+  import {pdfService, tocItems, curFileFingerprint, tocConfig, autoSaveEnabled, type TocConfig} from '../stores';
+  import {PDFService, type PDFState, type TocItem} from '$lib/pdf/service';
+  import {renderQueue} from '../lib/pdf/render-queue';
+  import {setOutline} from '../lib/pdf/outliner';
   import {debounce} from '$lib';
   import {buildTree, convertPdfJsOutlineToTocItems, setNestedValue, findActiveTocPath, cleanTocItems} from '$lib/utils';
   import {generateToc} from '$lib/toc-service';
   import {applyCustomPrefix} from '$lib/utils/prefix';
-  import { setPageLabels } from '$lib/pdf/page-labels';
+  import {setPageLabels} from '$lib/pdf/page-labels';
 
   import Toast from '../components/Toast.svelte';
   import Footer from '../components/Footer.svelte';
@@ -96,7 +96,7 @@
   let lastPdfContentJson = '';
   let lastInsertAtPage = 2;
   let prefetchPageNum = 0;
-  let lastConfigJson = '';  
+  let lastConfigJson = '';
 
   let customApiConfig = {
     provider: '',
@@ -114,7 +114,7 @@
       platform: 'web',
       version: '1.0.0',
     });
-  })
+  });
 
   onMount(() => {
     $pdfService = new PDFService();
@@ -184,7 +184,7 @@
   $: {
     config = $tocConfig;
     const currentConfigJson = JSON.stringify($tocConfig);
-    
+
     if (isPreviewMode && !isFileLoading && lastConfigJson) {
       if (currentConfigJson !== lastConfigJson) {
         debouncedUpdatePDF();
@@ -194,14 +194,13 @@
   }
 
   $: currentTocPath = findActiveTocPath(
-      $tocItems,
-      pdfState.currentPage,
-      $tocConfig.pageOffset || 0,
-      addPhysicalTocPage,
-      tocPageCount,
-      config.insertAtPage
+    $tocItems,
+    pdfState.currentPage,
+    $tocConfig.pageOffset || 0,
+    addPhysicalTocPage,
+    tocPageCount,
+    config.insertAtPage,
   );
-
 
   $: if (showOffsetModal) {
     tick().then(() => renderOffsetPreviewPage(offsetPreviewPageNum));
@@ -270,13 +269,9 @@
   const loadPdfLibraries = async () => {
     if (pdfjs && PdfLib) return;
     try {
-      const [pdfjsModule, PdfLibModule] = await Promise.all([
-        import('pdfjs-dist'),
-        import('pdf-lib')
-      ]);
+      const [pdfjsModule, PdfLibModule] = await Promise.all([import('pdfjs-dist'), import('pdf-lib')]);
       pdfjs = pdfjsModule;
       PdfLib = PdfLibModule;
-
     } catch (error: any) {
       console.error('Failed to load PDF libraries:', error);
       toastProps = {
@@ -350,13 +345,23 @@
         newDoc = res.newDoc || pdfState.doc;
         tocPageCount = res.tocPageCount;
         tocBytes = res.tocBytes;
-      
+
         if (isFontMissing) {
-           if (PDFService.regularFontBytes.has(fontKey)) {
-             toastProps = {show: true, message: $t('msg.font_loaded', {values: {font: fontKey}}), type: 'success', duration: 3000};
-           } else {
-             toastProps = {show: true, message: $t('msg.font_load_failed', {values: {font: fontKey}}), type: 'error', duration: 5000};
-           }
+          if (PDFService.regularFontBytes.has(fontKey)) {
+            toastProps = {
+              show: true,
+              message: $t('msg.font_loaded', {values: {font: fontKey}}),
+              type: 'success',
+              duration: 3000,
+            };
+          } else {
+            toastProps = {
+              show: true,
+              message: $t('msg.font_load_failed', {values: {font: fontKey}}),
+              type: 'error',
+              duration: 5000,
+            };
+          }
         }
       } else {
         newDoc = await pdfState.doc.copy();
@@ -396,7 +401,7 @@
         if (tocPdfInstance) {
           try {
             await tocPdfInstance.destroy();
-          } catch (e) { }
+          } catch (e) {}
         }
         tocPdfInstance = null;
       }
@@ -407,14 +412,14 @@
 
       if (isPreviewMode) {
         pdfState.totalPages = (originalPdfInstance?.numPages || 0) + tocPageCount;
-        
+
         if (pdfState.currentPage > pdfState.totalPages) {
           pdfState.currentPage = pdfState.totalPages;
         }
       } else {
         pdfState.totalPages = originalPdfInstance?.numPages || 0;
       }
-      
+
       pdfState = {...pdfState};
     } catch (error: any) {
       console.error('Error updating PDF:', error);
@@ -460,19 +465,19 @@
 
   const renderOffsetPreviewPage = async (pageNum: number) => {
     if (!originalPdfInstance || !showOffsetModal) return;
-    
+
     const canvas = document.getElementById('offset-preview-canvas') as HTMLCanvasElement;
     if (canvas) {
       const pageId = `orig-${pageNum}`;
       // Use premium priority (0) for modal preview
       const bitmap = await renderQueue.enqueue(pageId, originalPdfInstance, pageNum, 0);
-      
-      const ctx = canvas.getContext('2d', { alpha: false });
+
+      const ctx = canvas.getContext('2d', {alpha: false});
       if (!ctx || !showOffsetModal) return;
 
       const containerHeight = canvas.parentElement?.clientHeight || 0;
       const containerWidth = canvas.parentElement?.clientWidth || 0;
-      
+
       if (containerHeight === 0) {
         setTimeout(() => renderOffsetPreviewPage(pageNum), 50);
         return;
@@ -506,7 +511,7 @@
     showNextStepHint = false;
     hasShownTocHint = false;
     showOffsetModal = false;
-    
+
     pendingTocItems = [];
     firstTocItem = null;
 
@@ -560,11 +565,11 @@
         const firstPage = pdfState.doc.getPage(1) || pdfState.doc.getPage(0);
         const {width} = firstPage.getSize();
         const autoLayout = PDFService.getAutoLayout(width);
-        
-        tocConfig.update(c => ({
+
+        tocConfig.update((c) => ({
           ...c,
-          firstLevel: { ...c.firstLevel, fontSize: autoLayout.fontSizeL1 },
-          otherLevels: { ...c.otherLevels, fontSize: autoLayout.fontSizeLOther }
+          firstLevel: {...c.firstLevel, fontSize: autoLayout.fontSizeL1},
+          otherLevels: {...c.otherLevels, fontSize: autoLayout.fontSizeLOther},
         }));
       }
 
@@ -629,14 +634,14 @@
       updateViewerInstance();
       await tick();
       isFileLoading = false;
-      
+
       const hideHintUntil = localStorage.getItem('tocify_hide_next_step_hint_until');
       if (hideHintUntil && Date.now() < parseInt(hideHintUntil, 10)) {
         showNextStepHint = false;
       } else {
         showNextStepHint = true;
       }
-      
+
       autoSaveEnabled.set(true);
     }
   };
@@ -826,8 +831,8 @@
 
   const handleAddRange = () => {
     const lastRange = tocRanges.length > 0 ? tocRanges[tocRanges.length - 1] : null;
-    let nextStart = lastRange ? lastRange.end + 1 : (pdfState.currentPage || 1);
-    
+    let nextStart = lastRange ? lastRange.end + 1 : pdfState.currentPage || 1;
+
     if (nextStart < 1) nextStart = 1;
 
     tocRanges = [
@@ -914,8 +919,6 @@
   const handleViewerMessage = (event: CustomEvent<{message: string; type: 'success' | 'error' | 'info'}>) => {
     toastProps = {show: true, message: event.detail.message, type: event.detail.type};
   };
-
-
 </script>
 
 {#if !showGraphDrawer && tocItems && isGraphEntranceVisible}
@@ -985,84 +988,70 @@
     <div class="animate-spin rounded-full h-12 w-12 border-4 border-black border-t-transparent"></div>
   </div>
 {:else}
-  <p class="sr-only">
-    Generate clickable PDF bookmarks from scanned pages — AI-powered, private, and free.
-  </p>
-  
+  <p class="sr-only">Generate clickable PDF bookmarks from scanned pages — AI-powered, private, and free.</p>
+
   <div
     class="flex flex-col mt-5 lg:flex-row lg:mt-8 p-2 md:p-4 md:pr-3 gap-4 lg:gap-8 mx-auto w-[95%] md:w-[90%] xl:w-[80%] 3xl:w-[75%] justify-between"
   >
-      <div
-        in:fly={{y: 20, duration: 300, delay: 100}}
-        out:fade
-        class="contents"
-      >
-        <SidebarPanel
-          {pdfState}
-          {originalPdfInstance}
-          {tocPdfInstance}
-          {isAiLoading}
-          {aiError}
-          {showNextStepHint}
-          {config}
-          {customApiConfig}
-          {tocPageCount}
-          {isPreviewMode}
-          bind:tocRanges
-          bind:activeRangeIndex
-          bind:addPhysicalTocPage
-          bind:isTocConfigExpanded
-          on:openhelp={() => (showHelpModal = true)}
-          on:closeNextStepHint={handleCloseNextStepHint}
-          on:apiConfigChange={handleApiConfigChange}
-          on:apiConfigSave={handleApiConfigSave}
-          on:updateField={(e) => updateTocField(e.detail.path, e.detail.value)}
-          on:jumpToTocPage={jumpToTocPage}
-          on:jumpToPage={(e) => { jumpToPage(e.detail.to); }}
-          on:generateAi={generateTocFromAI}
-          on:hoveritem={handleTocItemHover}
-          on:fileselect={(e) => loadPdfFile(e.detail)}
-          on:viewerMessage={handleViewerMessage}
-          on:togglePreview={togglePreviewMode}
-          on:export={exportPDF}
-          on:addRange={handleAddRange}
-          on:removeRange={handleRemoveRange}
-          on:setActiveRange={handleSetActiveRange}
-          on:rangeChange={handleRangeChange}
-          on:updateActiveRange={handleUpdateActiveRange}
-        />
-      </div>
+    <SidebarPanel
+      {pdfState}
+      {originalPdfInstance}
+      {tocPdfInstance}
+      {isAiLoading}
+      {aiError}
+      {showNextStepHint}
+      {config}
+      {customApiConfig}
+      {tocPageCount}
+      {isPreviewMode}
+      bind:tocRanges
+      bind:activeRangeIndex
+      bind:addPhysicalTocPage
+      bind:isTocConfigExpanded
+      on:openhelp={() => (showHelpModal = true)}
+      on:closeNextStepHint={handleCloseNextStepHint}
+      on:apiConfigChange={handleApiConfigChange}
+      on:apiConfigSave={handleApiConfigSave}
+      on:updateField={(e) => updateTocField(e.detail.path, e.detail.value)}
+      on:jumpToTocPage={jumpToTocPage}
+      on:jumpToPage={(e) => {
+        jumpToPage(e.detail.to);
+      }}
+      on:generateAi={generateTocFromAI}
+      on:hoveritem={handleTocItemHover}
+      on:fileselect={(e) => loadPdfFile(e.detail)}
+      on:viewerMessage={handleViewerMessage}
+      on:togglePreview={togglePreviewMode}
+      on:export={exportPDF}
+      on:addRange={handleAddRange}
+      on:removeRange={handleRemoveRange}
+      on:setActiveRange={handleSetActiveRange}
+      on:rangeChange={handleRangeChange}
+      on:updateActiveRange={handleUpdateActiveRange}
+    />
 
-      <div
-        in:fly={{y: 20, duration: 300, delay: 200}}
-        out:fade
-        class="contents"
-      >
-        <PreviewPanel
-          {isFileLoading}
-          bind:pdfState
-          {originalPdfInstance}
-          {tocPdfInstance}
-          {isPreviewMode}
-          {isPreviewLoading}
-          {tocRanges}
-          {activeRangeIndex}
-          {tocPageCount}
-          {addPhysicalTocPage}
-          {jumpToTocPage}
-          {currentTocPath}
-          {prefetchPageNum}
-          bind:isDragging
-          on:fileselect={(e) => loadPdfFile(e.detail)}
-          on:viewerMessage={handleViewerMessage}
-          on:updateActiveRange={handleUpdateActiveRange}
-          on:togglePreview={togglePreviewMode}
-          on:export={exportPDF}
-        />
-      </div>
+    <PreviewPanel
+      {isFileLoading}
+      bind:pdfState
+      {originalPdfInstance}
+      {tocPdfInstance}
+      {isPreviewMode}
+      {isPreviewLoading}
+      {tocRanges}
+      {activeRangeIndex}
+      {tocPageCount}
+      {addPhysicalTocPage}
+      {jumpToTocPage}
+      {currentTocPath}
+      {prefetchPageNum}
+      bind:isDragging
+      on:fileselect={(e) => loadPdfFile(e.detail)}
+      on:viewerMessage={handleViewerMessage}
+      on:updateActiveRange={handleUpdateActiveRange}
+      on:togglePreview={togglePreviewMode}
+      on:export={exportPDF}
+    />
   </div>
-
-
 
   <Footer />
 

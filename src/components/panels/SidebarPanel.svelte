@@ -31,7 +31,7 @@
   const dispatch = createEventDispatcher();
 </script>
 
-<div class="w-full lg:w-[35%]">
+<div class="w-full lg:w-[35%] flex-shrink-0">
   <Header on:openhelp={() => dispatch('openhelp')} />
 
   <ApiSetting
