@@ -17,7 +17,7 @@
 
 <SeoJsonLd title={$t('seo.why_title')} description={$t('seo.why_desc')} />
 
-<div class="min-h-screen flex font-['HuiwenMincho'] flex-col bg-yellow-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
+<div class="min-h-screen flex font-['HuiwenMincho'] text-neutral-800 flex-col bg-yellow-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
   
   <div class="container mx-auto px-4 py-12 flex-1 max-w-4xl">
     
@@ -31,7 +31,7 @@
            Back to Tool
          </a>
 
-         <h1 class="text-3xl md:text-5xl font-black mb-8 leading-tight tracking-tight text-gray-900">
+         <h1 class="text-3xl md:text-5xl mb-8 leading-tight tracking-tight text-gray-900">
            {$t('seo.why_title')}
          </h1>
          
@@ -48,7 +48,7 @@
           in:fly={{ y: 20, duration: 600, delay: 100 }}
           class="text-2xl md:text-3xl font-bold mb-10 flex items-center gap-3"
         >
-          <span class="bg-black text-white w-8 h-8 flex items-center justify-center rounded-lg text-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">#</span>
+          <span class="bg-neutral-800 text-white w-8 h-8 flex items-center justify-center rounded-lg text-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">#</span>
           {$t('seo.features_title')}
         </h2>
         
@@ -122,7 +122,7 @@
           ] as faq}
             <div 
               in:fly={{ y: 20, duration: 500, delay: faq.delay }}
-              class="bg-white border-2 border-black rounded-xl p-6 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all duration-200"
+              class="bg-white border-2 border-neutral-800 rounded-xl p-6 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all duration-200"
             >
               <h3 class="text-lg font-bold mb-3 flex items-start gap-2">
                 <span class="text-blue-500">Q.</span> {faq.q}
