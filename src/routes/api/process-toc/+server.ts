@@ -93,6 +93,7 @@ export const POST = withRateLimit(async ({ request }) => {
     } else if (currentProvider === 'zhipu') {
       jsonText = await processWithZhipu(
         isTextMode ? text : images, apiKey, isTextMode);
+    } else if (currentProvider === 'doubao') {
       jsonText = await processWithDoubao(
         isTextMode ? text : images, apiKey, isTextMode, doubaoEndpointIdText, doubaoEndpointIdVision);
     } else {

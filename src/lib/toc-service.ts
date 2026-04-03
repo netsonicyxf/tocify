@@ -65,7 +65,7 @@ async function fetchChunk(
       friendlyMessage = t('error.try_other_model', { provider: providerName, message: friendlyMessage });
     } else if (response.status === 413) {
       friendlyMessage = t('error.request_too_large');
-    } else if (response.status === 429) {
+    } else if (response.status === 429 && !apiKey) {
       friendlyMessage = t('error.daily_limit_exceeded');
     }
     throw new Error(friendlyMessage);
