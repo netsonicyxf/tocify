@@ -106,7 +106,8 @@
     "step_2_bold": "Generate ToC button",
     "or_text": "Or, you can",
     "manual_add_bold": "manually add items",
-    "manual_add_text": "in the editor below"
+    "manual_add_text": "in the editor below",
+    "multi_select_tip": "Tip: hold Shift and click to select a range of TOC items."
   },
   "tooltip": {
     "generate_ai": "Generate ToC from selected pages using AI",

@@ -178,6 +178,18 @@
     if (isSelectionBlockedTarget(event.target)) return;
     onSelect(item, event);
   }
+
+  function handleRowMouseDown(event: MouseEvent) {
+    if (isSelectionBlockedTarget(event.target)) return;
+    event.preventDefault();
+  }
+
+  function handleShiftSelectFromInput(event: MouseEvent) {
+    if (!event.shiftKey) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onSelect(item, event);
+  }
 </script>
 
 {#if item}
@@ -190,13 +202,16 @@
       class:bg-amber-50={isSelected && !isActive}
       data-is-dnd-shadow-item-hint={isShadowItem}
       on:mouseenter={handleMouseEnter}
+      on:mousedown={handleRowMouseDown}
       on:click={handleRowClick}
     >
       <div
         class="flex items-center gap-1 flex-1 min-w-0 h-full"
       >
         <button
+          type="button"
           on:click|stopPropagation={(e) => onSelect(item, e)}
+          on:mousedown|preventDefault
           class="w-3 h-3 rounded-full border-2 flex-shrink-0 transition-all duration-150 {isSelected ? 'bg-amber-400 border-amber-500 scale-100' : 'border-gray-300 scale-90 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:!scale-100 hover:!border-amber-400'}"
           title={$t('toc.select_item')}
           aria-label={$t('toc.select_item')}
@@ -232,6 +247,7 @@
         <input
           type="text"
           bind:value={editTitle}
+          on:mousedown={handleShiftSelectFromInput}
           on:focus={handleTitleFocus}
           on:blur={() => {
             isFocused = false;
@@ -247,6 +263,7 @@
       <input
         type="number"
         bind:value={editPage}
+        on:mousedown={handleShiftSelectFromInput}
         on:input={handlePageInput}
         on:focus={() => (isPageFocused = true)}
         on:blur={() => {

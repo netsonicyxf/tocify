@@ -60,7 +60,6 @@
   let showHelpModal = false;
   let showStarRequestModal = false;
   let offsetPreviewPageNum = 1;
-  let requestCnt = 0;
 
   let toastProps: {
     show: boolean;
@@ -703,13 +702,7 @@
       setTimeout(() => {
         const isDismissed = localStorage.getItem('tocify_hide_star_request') === 'true';
         if (!isDismissed) {
-          requestCnt += 1;
-          
-          let probability = 1.0;
-          if (requestCnt === 1) probability = 0.5;
-          else if (requestCnt === 2) probability = 0.75;
-
-          if (Math.random() < probability) {
+          if (Math.random() <= 0.1) {
             showStarRequestModal = true;
           }
         }

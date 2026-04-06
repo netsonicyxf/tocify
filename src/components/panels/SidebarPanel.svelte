@@ -76,6 +76,9 @@
         {$t('hint.or_text')} <strong class="text-black">{$t('hint.manual_add_bold')}</strong>
         {$t('hint.manual_add_text')}
       </p>
+      <p class="text-sm text-gray-800 mt-1">
+        {$t('hint.multi_select_tip')}
+      </p>
     </div>
   {/if}
 
