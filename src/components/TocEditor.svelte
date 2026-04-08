@@ -294,6 +294,40 @@
     return endIndex;
   }
 
+  function getPreviousSiblingIndex(items: FlatTocItem[], startIndex: number) {
+    const currentLevel = items[startIndex].level;
+
+    for (let index = startIndex - 1; index >= 0; index -= 1) {
+      if (items[index].level === currentLevel) {
+        return index;
+      }
+      if (items[index].level < currentLevel) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  function canDemoteSelectedRoot(
+    items: FlatTocItem[],
+    startIndex: number,
+    selectedRootIds: Set<string>,
+  ) {
+    let currentIndex = startIndex;
+    let previousSiblingIndex = getPreviousSiblingIndex(items, currentIndex);
+
+    while (
+      previousSiblingIndex !== null &&
+      selectedRootIds.has(items[previousSiblingIndex].id)
+    ) {
+      currentIndex = previousSiblingIndex;
+      previousSiblingIndex = getPreviousSiblingIndex(items, currentIndex);
+    }
+
+    return previousSiblingIndex !== null;
+  }
+
   function getAncestorIds(items: FlatTocItem[], ids: Iterable<string>) {
     const parentMap = getParentMap(items);
     const ancestorIds = new Set<string>();
@@ -373,19 +407,26 @@
   function adjustSelectedLevels(delta: -1 | 1) {
     if (selectedIds.size === 0) return;
 
-    const flatItems = normalizeFlatLevels(flattenTocItems($tocItems));
-    const selectedRootIds = getSelectedRootIds(flatItems, selectedIds);
-    const indexMap = getFlatIndexMap(flatItems);
+    const originalFlatItems = normalizeFlatLevels(flattenTocItems($tocItems));
+    const flatItems = [...originalFlatItems];
+    const selectedRootIds = getSelectedRootIds(originalFlatItems, selectedIds);
+    const selectedRootIdSet = new Set(selectedRootIds);
+    const indexMap = getFlatIndexMap(originalFlatItems);
     let hasChanges = false;
 
     for (const id of selectedRootIds) {
       const startIndex = indexMap.get(id);
       if (startIndex === undefined) continue;
 
-      if (delta === -1 && flatItems[startIndex].level <= 1) continue;
-      if (delta === 1 && startIndex === 0) continue;
+      if (delta === -1 && originalFlatItems[startIndex].level <= 1) continue;
+      if (
+        delta === 1 &&
+        !canDemoteSelectedRoot(originalFlatItems, startIndex, selectedRootIdSet)
+      ) {
+        continue;
+      }
 
-      const endIndex = getSubtreeEndIndex(flatItems, startIndex);
+      const endIndex = getSubtreeEndIndex(originalFlatItems, startIndex);
       for (let index = startIndex; index < endIndex; index += 1) {
         flatItems[index] = {
           ...flatItems[index],
