@@ -1,6 +1,6 @@
 <script lang="ts">
   import {createEventDispatcher} from 'svelte';
-  import {Upload, PencilIcon, EyeIcon, Download} from 'lucide-svelte';
+  import {Upload, PencilIcon, EyeIcon, Download, Menu} from 'lucide-svelte';
   import {fly, fade} from 'svelte/transition';
   import { t } from 'svelte-i18n';
 
@@ -49,13 +49,27 @@
       </div>
     {/key}
   </button>
-  <button
-    class="btn flex gap-2 items-center justify-center font-bold bg-green-500 text-black border-2 border-black rounded-lg px-4 py-2 shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all disabled:bg-gray-300 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 w-full md:w-auto"
-    on:click={() => dispatch('export')}
-    disabled={!doc}
+  <div
+    class="flex w-full md:w-auto"
     in:fly={{y: 10, duration: 250, delay: 200}}
   >
-    <Download size={16} />
-    {$t('btn.generate_pdf')}
-  </button>
+    <button
+      class="btn flex-1 md:flex-none flex gap-2 items-center justify-center font-bold bg-green-500 text-black border-2 border-black rounded-l-lg px-4 py-2 shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all disabled:bg-gray-300 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0"
+      on:click={() => dispatch('export')}
+      disabled={!doc}
+      title={$t('tooltip.export_pdf')}
+    >
+      <Download size={16} />
+      {$t('btn.generate_pdf')}
+    </button>
+    <button
+      class="btn flex items-center justify-center font-bold bg-green-500 text-black border-y-2 border-r-2 border-black rounded-r-lg px-2.5 py-2 shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all disabled:bg-gray-300 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0"
+      on:click={() => dispatch('openChapterExport')}
+      disabled={!doc}
+      title={$t('tooltip.export_chapters')}
+      aria-label={$t('tooltip.export_chapters')}
+    >
+      <Menu size={16} />
+    </button>
+  </div>
 </div>

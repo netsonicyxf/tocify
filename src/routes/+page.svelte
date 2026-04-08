@@ -10,6 +10,17 @@
   import '../lib/i18n';
   import {pdfService, tocItems, curFileFingerprint, tocConfig, autoSaveEnabled, type TocConfig} from '../stores';
   import {PDFService, type PDFState, type TocItem} from '$lib/pdf/service';
+  import {
+    type ExportableChapter,
+    buildChapterExportItems,
+    buildOutlineTreeForExport,
+    createPageMapForRanges,
+    filterSelectedChapterRoots,
+    findTocItemById,
+    getChapterFilename,
+    getMergedChapterFilename,
+    mergeChapterRanges,
+  } from '$lib/pdf/chapter-export';
   import {renderQueue} from '../lib/pdf/render-queue';
   import {setOutline} from '../lib/pdf/outliner';
   import {debounce} from '$lib';
@@ -24,6 +35,7 @@
   import AiLoadingModal from '../components/modals/AiLoadingModal.svelte';
   import OffsetModal from '../components/modals/OffsetModal.svelte';
   import HelpModal from '../components/modals/HelpModal.svelte';
+  import ChapterExportModal from '../components/modals/ChapterExportModal.svelte';
   import StarRequestModal from '../components/modals/StarRequestModal.svelte';
 
   import DownloadBanner from '../components/DownloadBanner.svelte';
@@ -58,8 +70,11 @@
 
   let showOffsetModal = false;
   let showHelpModal = false;
+  let showChapterExportModal = false;
   let showStarRequestModal = false;
   let offsetPreviewPageNum = 1;
+  let selectedChapterExportIds: string[] = [];
+  let chapterExportMode: 'merge' | 'separate' = 'merge';
 
   let toastProps: {
     show: boolean;
@@ -100,6 +115,7 @@
   let lastInsertAtPage = 2;
   let prefetchPageNum = 0;
   let lastConfigJson = '';
+  let chapterExportItems: ExportableChapter[] = [];
 
   let customApiConfig = {
     provider: '',
@@ -184,6 +200,42 @@
     }));
   }
 
+  async function savePdfBytes(pdfBytes: Uint8Array, suggestedName: string, preferSavePicker = true) {
+    const isSupported = preferSavePicker && 'showSaveFilePicker' in window;
+
+    if (isSupported) {
+      try {
+        const fileHandle = await (window as any).showSaveFilePicker({
+          suggestedName,
+          types: [
+            {
+              description: 'PDF Document',
+              accept: {'application/pdf': ['.pdf']},
+            },
+          ],
+        });
+        const writable = await fileHandle.createWritable();
+        await writable.write(pdfBytes);
+        await writable.close();
+        return true;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return false;
+        throw err;
+      }
+    }
+
+    const pdfBlob = new Blob([pdfBytes as BlobPart], {type: 'application/pdf'});
+    const url = URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = suggestedName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return true;
+  }
+
   // Only trigger updatePDF when config content actually changes, not just reference
   $: {
     config = $tocConfig;
@@ -205,6 +257,25 @@
     tocPageCount,
     config.insertAtPage,
   );
+
+  $: chapterExportItems = buildChapterExportItems(
+    $tocItems,
+    $tocConfig.pageOffset || 0,
+    originalPdfInstance?.numPages || 0,
+    get(t)('chapter_export.untitled'),
+  );
+
+  $: {
+    const validIds = new Set(chapterExportItems.map((item) => item.id));
+    const nextSelectedIds = selectedChapterExportIds.filter((id) => validIds.has(id));
+    const selectionChanged =
+      nextSelectedIds.length !== selectedChapterExportIds.length ||
+      nextSelectedIds.some((id, index) => id !== selectedChapterExportIds[index]);
+
+    if (selectionChanged) {
+      selectedChapterExportIds = nextSelectedIds;
+    }
+  }
 
   $: if (showOffsetModal) {
     tick().then(() => renderOffsetPreviewPage(offsetPreviewPageNum));
@@ -515,6 +586,8 @@
     showNextStepHint = false;
     hasShownTocHint = false;
     showOffsetModal = false;
+    showChapterExportModal = false;
+    selectedChapterExportIds = [];
 
     pendingTocItems = [];
     firstTocItem = null;
@@ -652,27 +725,6 @@
 
   const exportPDF = async () => {
     try {
-      let fileHandle;
-      let writable;
-      const isSupported = 'showSaveFilePicker' in window;
-
-      if (isSupported) {
-        try {
-          fileHandle = await (window as any).showSaveFilePicker({
-            suggestedName: pdfState.filename.replace('.pdf', '_outlined.pdf'),
-            types: [
-              {
-                description: 'PDF Document',
-                accept: {'application/pdf': ['.pdf']},
-              },
-            ],
-          });
-        } catch (err: any) {
-          if (err.name === 'AbortError') return;
-          throw err;
-        }
-      }
-
       toastProps = {show: true, message: $t('toast.exporting'), type: 'info'};
 
       await updatePDF(true);
@@ -682,20 +734,12 @@
       }
       const pdfBytes = await pdfState.newDoc.save();
 
-      if (isSupported && fileHandle) {
-        writable = await fileHandle.createWritable();
-        await writable.write(pdfBytes);
-        await writable.close();
-      } else {
-        const pdfBlob = new Blob([pdfBytes as any], {type: 'application/pdf'});
-        const url = URL.createObjectURL(pdfBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = pdfState.filename.replace('.pdf', '_outlined.pdf');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const saved = await savePdfBytes(
+        pdfBytes,
+        pdfState.filename.replace('.pdf', '_outlined.pdf'),
+      );
+      if (!saved) {
+        return;
       }
       toastProps = {show: true, message: $t('toast.export_success'), type: 'success'};
 
@@ -712,6 +756,102 @@
       toastProps = {show: true, message: $t('toast.error_exporting', {values: {msg: error.message}}), type: 'error'};
     }
   };
+
+  function openChapterExportModal() {
+    selectedChapterExportIds = [];
+    chapterExportMode = 'merge';
+    showChapterExportModal = true;
+  }
+
+  async function exportSelectedChapters() {
+    try {
+      if (!PdfLib || !pdfState.doc || !originalPdfInstance) {
+        toastProps = {show: true, message: $t('toast.no_pdf_to_export'), type: 'error'};
+        return;
+      }
+
+      const selectedChapters = chapterExportItems.filter((item) =>
+        selectedChapterExportIds.includes(item.id),
+      );
+      const selectedRootChapters = filterSelectedChapterRoots(selectedChapters, chapterExportItems);
+
+      if (selectedChapters.length === 0) {
+        toastProps = {show: true, message: $t('toast.no_chapters_selected'), type: 'error'};
+        return;
+      }
+
+      toastProps = {show: true, message: $t('toast.exporting_chapters'), type: 'info'};
+
+      const {PDFDocument} = PdfLib;
+      const sourceDoc = pdfState.doc;
+
+      if (chapterExportMode === 'merge') {
+        const mergedDoc = await PDFDocument.create();
+        const mergedRanges = mergeChapterRanges(selectedChapters);
+        const pageMap = createPageMapForRanges(mergedRanges);
+
+        for (const range of mergedRanges) {
+          const pageIndices = Array.from(
+            {length: range.endPage - range.startPage + 1},
+            (_, index) => range.startPage - 1 + index,
+          );
+          const copiedPages = await mergedDoc.copyPages(sourceDoc, pageIndices);
+          copiedPages.forEach((page) => mergedDoc.addPage(page));
+        }
+
+        PDFService.sanitizePdfMetadata(mergedDoc);
+        const mergedOutline = selectedRootChapters
+          .map((chapter) => findTocItemById($tocItems, chapter.id))
+          .filter(Boolean)
+          .map((item) => buildOutlineTreeForExport(item as TocItem, pageMap, $tocConfig.pageOffset || 0))
+          .filter(Boolean) as TocItem[];
+
+        if (mergedOutline.length > 0) {
+          await setOutline(mergedDoc, mergedOutline);
+        }
+
+        const saved = await savePdfBytes(
+          await mergedDoc.save(),
+          getMergedChapterFilename(pdfState.filename, selectedChapters),
+        );
+        if (!saved) return;
+      } else {
+        for (const chapter of selectedRootChapters) {
+          const chapterDoc = await PDFDocument.create();
+          const pageIndices = Array.from(
+            {length: chapter.endPage - chapter.startPage + 1},
+            (_, index) => chapter.startPage - 1 + index,
+          );
+          const copiedPages = await chapterDoc.copyPages(sourceDoc, pageIndices);
+          copiedPages.forEach((page) => chapterDoc.addPage(page));
+          PDFService.sanitizePdfMetadata(chapterDoc);
+          const pageMap = createPageMapForRanges([
+            {startPage: chapter.startPage, endPage: chapter.endPage},
+          ]);
+          const chapterItem = findTocItemById($tocItems, chapter.id);
+          const chapterOutline = chapterItem
+            ? buildOutlineTreeForExport(chapterItem, pageMap, $tocConfig.pageOffset || 0)
+            : null;
+
+          if (chapterOutline) {
+            await setOutline(chapterDoc, [chapterOutline]);
+          }
+
+          await savePdfBytes(
+            await chapterDoc.save(),
+            getChapterFilename(pdfState.filename, chapter),
+            false,
+          );
+        }
+      }
+
+      showChapterExportModal = false;
+      toastProps = {show: true, message: $t('toast.export_chapters_success'), type: 'success'};
+    } catch (error: any) {
+      console.error('Error exporting chapters:', error);
+      toastProps = {show: true, message: $t('toast.error_exporting', {values: {msg: error.message}}), type: 'error'};
+    }
+  }
 
   const generateTocFromAI = async () => {
     showNextStepHint = false;
@@ -1106,6 +1246,7 @@
       on:updateActiveRange={handleUpdateActiveRange}
       on:togglePreview={togglePreviewMode}
       on:export={exportPDF}
+      on:openChapterExport={openChapterExportModal}
     />
   </div>
 
@@ -1129,6 +1270,14 @@
   />
 
   <HelpModal bind:showHelpModal />
+
+  <ChapterExportModal
+    bind:showChapterExportModal
+    bind:selectedChapterIds={selectedChapterExportIds}
+    bind:exportMode={chapterExportMode}
+    chapters={chapterExportItems}
+    on:confirm={exportSelectedChapters}
+  />
 
   <StarRequestModal bind:show={showStarRequestModal} />
 {/if}

@@ -116,6 +116,7 @@
           on:triggerUpload={() => fileInputRef?.click()}
           on:togglePreview={() => dispatch('togglePreview')}
           on:export={() => dispatch('export')}
+          on:openChapterExport={() => dispatch('openChapterExport')}
         />
       </div>
     {/if}
