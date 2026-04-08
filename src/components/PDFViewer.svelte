@@ -270,7 +270,7 @@
     }
   }
 
-  $: if (activeRangeIndex >= 0 && mode === 'grid') {
+  $: if (activeRangeIndex >= 0 && mode === 'grid' && !isSelecting) {
     const range = tocRanges[activeRangeIndex];
     if (range) autoScrollToPage(range.start);
   }
