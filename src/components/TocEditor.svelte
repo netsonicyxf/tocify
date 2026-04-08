@@ -342,7 +342,7 @@
   }
 
   function adjustSelectedPageOffset(delta: number) {
-    if (!delta || selectedIds.size < 2) return;
+    if (!delta || selectedIds.size === 0) return;
 
     saveHistory();
     const flatItems = flattenTocItems($tocItems);
@@ -371,7 +371,7 @@
   }
 
   function adjustSelectedLevels(delta: -1 | 1) {
-    if (selectedIds.size < 2) return;
+    if (selectedIds.size === 0) return;
 
     const flatItems = normalizeFlatLevels(flattenTocItems($tocItems));
     const selectedRootIds = getSelectedRootIds(flatItems, selectedIds);
@@ -609,7 +609,7 @@
 
   $: hasAnyExpanded = $tocItems.some((item: TocEntry) => item.open);
   $: selectedCount = selectedIds.size;
-  $: if (selectedCount < 2) {
+  $: if (selectedCount === 0) {
     showBatchOffsetEditor = false;
     batchOffsetInput = '';
   }
@@ -734,13 +734,8 @@
       {#if selectedCount >= 1}
         <div class="sticky top-12 z-30 mb-3 ml-12 pointer-events-none">
           <div class="pointer-events-auto flex flex-wrap items-center gap-2 bg-white/35 backdrop-blur-sm border-2 border-black/95 rounded-lg px-3 py-2">
-       
             <span class="text-xs font-semibold text-gray-700">
-             
-             
-           {$t('toc.batch_operations')} 
-
-              {$t('toc.selected_count', {values: {count: selectedCount}})}
+              {$t('toc.batch_operations')} {$t('toc.selected_count', {values: {count: selectedCount}})}
             </span>
             <button
               on:click={clearSelection}

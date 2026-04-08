@@ -212,7 +212,7 @@
           type="button"
           on:click|stopPropagation={(e) => onSelect(item, e)}
           on:mousedown|preventDefault
-          class="w-3 h-3 rounded-full border-2 flex-shrink-0 transition-all duration-150 {isSelected ? 'bg-amber-400 border-amber-500 scale-100' : 'border-gray-300 scale-90 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:!scale-100 hover:!border-amber-400'}"
+          class="w-3 h-3 rounded-full border-2 flex-shrink-0 transition-all duration-150 {isSelected ? 'bg-amber-400 border-amber-500 scale-100' : 'border-gray-400 scale-90 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:!scale-100 hover:!border-amber-400'}"
           title={$t('toc.select_item')}
           aria-label={$t('toc.select_item')}
         ></button>
