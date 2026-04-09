@@ -1,20 +1,24 @@
-name: Duplicate Issue Detector
+name: Similar Issue Detector
 
 on:
   issues:
-    types: [opened, edited]
+    types: [opened, edited, reopened]
+
+concurrency:
+  group: similar-issues-${{ github.event.issue.number }}
+  cancel-in-progress: true
 
 jobs:
-  detect-duplicate:
+  detect-similar:
     runs-on: ubuntu-latest
     permissions:
-      issues: write
       contents: read
+      issues: write
     steps:
-      - name: Validate Similar Issues
-        uses: actions-cool/issues-similarity-analysis@v1.3.2
-        with:
-          filter-threshold: 0.5
-          title-excludes: 'bug, feature, question'
-          comment-title: '### Similar issues found'
-          comment-body: '${index}. [${title}](${url})'
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find and comment similar issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .github/scripts/find-similar-issues.mjs
