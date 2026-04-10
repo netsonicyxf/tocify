@@ -1,6 +1,6 @@
 <script lang="ts">
   import {fade, fly} from 'svelte/transition';
-  import {X, ChevronRight, ChevronDown, CheckSquare, Square, ChevronsDownUp, Download} from 'lucide-svelte';
+  import {X, ChevronRight, ChevronDown, CheckSquare, Square, ChevronsDownUp, Download, Search} from 'lucide-svelte';
   import {t} from 'svelte-i18n';
   import {createEventDispatcher} from 'svelte';
   import type {ExportableChapter} from '$lib/pdf/chapter-export';
@@ -12,6 +12,7 @@
 
   const dispatch = createEventDispatcher();
   let expandedIds = new Set<string>();
+  let searchQuery = '';
   let visibleChapters: ExportableChapter[] = [];
   let lastExpandInitKey = '';
   let wasOpen = false;
@@ -26,13 +27,40 @@
 
     if (shouldInitExpandedIds) {
       expandedIds = new Set();
+      searchQuery = '';
       lastExpandInitKey = chapterExpandKey;
     }
     wasOpen = showChapterExportModal;
   }
+  $: matchingIds = new Set(
+    chapters
+      .filter((c) => c.title.toLowerCase().includes(searchQuery.toLowerCase()))
+      .map((c) => c.id),
+  );
+  $: idsToShow = new Set();
+  $: {
+    if (searchQuery) {
+      const newIdsToShow = new Set();
+      matchingIds.forEach((id) => {
+        newIdsToShow.add(id);
+        let current = chapters.find((c) => c.id === id);
+        while (current?.parentId) {
+          newIdsToShow.add(current.parentId);
+          current = chapters.find((c) => c.id === current.parentId);
+        }
+      });
+      idsToShow = newIdsToShow;
+    }
+  }
+
   $: {
     expandedIds;
-    visibleChapters = chapters.filter((chapter) => isChapterVisible(chapter));
+    visibleChapters = chapters.filter((chapter) => {
+      if (searchQuery) {
+        return idsToShow.has(chapter.id);
+      }
+      return isChapterVisible(chapter);
+    });
   }
 
   function toggleSelection(chapterId: string) {
@@ -90,7 +118,7 @@
     on:click={() => (showChapterExportModal = false)}
   >
     <div
-      class="bg-white rounded-lg p-5 md:p-6 w-[95%] md:w-[85%] max-w-4xl max-h-[90vh] overflow-y-auto border-2 border-gray-300 "
+      class="bg-white rounded-lg p-5 md:p-6 w-[90%] md:w-[80%] max-w-3xl max-h-[90vh] overflow-y-auto border-2 border-gray-300 "
       transition:fly={{y: 20, duration: 200}}
       on:click|stopPropagation
     >
@@ -109,11 +137,11 @@
       </div>
 
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-y-3 gap-x-1">
           <button
             type="button"
             on:click={selectAll}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-blue-300 text-black border-2 border-black rounded-lg shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-blue-300 text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
           >
             <CheckSquare size={14} />
             {$t('chapter_export.select_all')}
@@ -121,7 +149,7 @@
           <button
             type="button"
             on:click={clearSelection}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-white text-black border-2 border-black rounded-lg shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-white text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
           >
             <Square size={14} />
             {$t('chapter_export.clear_selection')}
@@ -129,7 +157,7 @@
           <button
             type="button"
             on:click={expandAll}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-yellow-300 text-black border-2 border-black rounded-lg shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-yellow-300 text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
           >
             <ChevronDown size={14} />
             {$t('chapter_export.expand_all')}
@@ -137,7 +165,7 @@
           <button
             type="button"
             on:click={collapseAll}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-orange-200 text-black border-2 border-black rounded-lg shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-orange-200 text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
           >
             <ChevronsDownUp size={14} />
             {$t('chapter_export.collapse_all')}
@@ -147,7 +175,7 @@
           </span>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3 max-w-56 rounded-md bg-gray-50 border border-gray-200 px-3 py-2">
+        <div class="flex flex-wrap items-center gap-3 max-w-56 rounded-md bg-gray-50 border border-gray-200 px-2 py-2">
           <label class="flex items-center gap-2 text-sm font-medium text-black">
             <input
               type="radio"
@@ -169,11 +197,37 @@
         </div>
       </div>
 
+      <div class="relative mb-4">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+          <Search size={18} />
+        </div>
+        <input
+          type="text"
+          bind:value={searchQuery}
+          placeholder={$t('chapter_export.search_placeholder')}
+          class="block w-full pl-10 pr-10 py-2.5 border-2 border-black rounded-lg focus:ring-0 focus:border-blue-500 bg-white text-sm font-medium transition-all"
+        />
+        {#if searchQuery}
+          <button
+            type="button"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-black transition-colors"
+            on:click={() => (searchQuery = '')}
+          >
+            <X size={18} />
+          </button>
+        {/if}
+      </div>
+
       <div class="border-2 border-black rounded-lg overflow-hidden">
-        <div class="max-h-[50vh] overflow-y-auto divide-y divide-black/10 bg-gray-50">
+        <div class="max-h-[45vh] min-h-[200px] overflow-y-auto divide-y divide-black/10 bg-gray-50">
           {#if chapters.length === 0}
             <div class="px-4 py-6 text-sm text-gray-600">
               {$t('chapter_export.empty')}
+            </div>
+          {:else if visibleChapters.length === 0}
+            <div class="px-4 pt-16 pb-10 text-center text-sm text-gray-500">
+              <Search size={32} class="mx-auto mb-2 opacity-20" />
+              {$t('chapter_export.no_results')}
             </div>
           {:else}
             {#each visibleChapters as chapter}
@@ -234,7 +288,7 @@
           type="button"
           on:click={() => dispatch('confirm')}
           disabled={selectedCount === 0}
-          class="inline-flex items-center justify-center gap-2 px-4 py-2 font-bold bg-green-500 text-black border-2 border-black rounded-lg shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:bg-gray-300 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0"
+          class="inline-flex items-center justify-center gap-2 px-4 py-2 font-bold bg-green-500 text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:bg-gray-300 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0"
         >
           <Download size={16} />
           {$t('chapter_export.export')}

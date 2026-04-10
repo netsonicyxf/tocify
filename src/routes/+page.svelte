@@ -1177,7 +1177,7 @@
   <h1 class="sr-only">Generate PDF bookmarks / table of contents in browser — AI-powered, private, online and free.</h1>
 
   <div
-    class="flex flex-col mt-5 lg:flex-row lg:mt-8 p-2 md:p-4 md:pr-3 gap-4 lg:gap-8 mx-auto w-[95%] md:w-[90%] xl:w-[80%] 3xl:w-[75%] justify-between"
+    class="flex flex-col mt-5 lg:flex-row lg:mt-8 p-2 md:p-4 md:pr-3 gap-4 lg:gap-8 mx-auto w-[95%] md:w-[90%] xl:w-[80%] 3xl:w-[75%] max-w-6xl justify-between"
   >
     <SidebarPanel
       {pdfState}

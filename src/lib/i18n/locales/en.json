@@ -140,7 +140,9 @@
     "untitled": "Untitled Chapter",
     "empty": "No chapters available to export.",
     "cancel": "Cancel",
-    "export": "Export"
+    "export": "Export",
+    "search_placeholder": "Search chapters...",
+    "no_results": "No matching chapters found."
   },
   "dropzone": {
     "drop_here": "Drop your PDF file here...",
