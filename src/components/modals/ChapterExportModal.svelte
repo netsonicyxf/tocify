@@ -1,6 +1,6 @@
 <script lang="ts">
   import {fade, fly} from 'svelte/transition';
-  import {X, ChevronRight, ChevronDown, CheckSquare, Square, ChevronsDownUp, Download, Search} from 'lucide-svelte';
+  import {X, ChevronRight, ChevronDown, CheckSquare, Square, ChevronsDownUp, Download, Search, List} from 'lucide-svelte';
   import {t} from 'svelte-i18n';
   import {createEventDispatcher} from 'svelte';
   import type {ExportableChapter} from '$lib/pdf/chapter-export';
@@ -13,6 +13,7 @@
   const dispatch = createEventDispatcher();
   let expandedIds = new Set<string>();
   let searchQuery = '';
+  let showSelectedOnly = false;
   let visibleChapters: ExportableChapter[] = [];
   let lastExpandInitKey = '';
   let wasOpen = false;
@@ -55,11 +56,15 @@
 
   $: {
     expandedIds;
+    showSelectedOnly;
     visibleChapters = chapters.filter((chapter) => {
+      if (showSelectedOnly && !selectedChapterIds.includes(chapter.id)) {
+        return false;
+      }
       if (searchQuery) {
         return idsToShow.has(chapter.id);
       }
-      return isChapterVisible(chapter);
+      return showSelectedOnly ? true : isChapterVisible(chapter);
     });
   }
 
@@ -77,6 +82,14 @@
 
   function clearSelection() {
     selectedChapterIds = [];
+  }
+
+  function selectLevel1Only() {
+    selectedChapterIds = chapters.filter((chapter) => chapter.level === 1).map((chapter) => chapter.id);
+  }
+
+  function selectLevel2Only() {
+    selectedChapterIds = chapters.filter((chapter) => chapter.level === 2).map((chapter) => chapter.id);
   }
 
   function toggleExpanded(chapterId: string) {
@@ -136,24 +149,8 @@
         </button>
       </div>
 
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-        <div class="flex flex-wrap items-center gap-y-3 gap-x-1">
-          <button
-            type="button"
-            on:click={selectAll}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-blue-300 text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-          >
-            <CheckSquare size={14} />
-            {$t('chapter_export.select_all')}
-          </button>
-          <button
-            type="button"
-            on:click={clearSelection}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-white text-black border-2 border-black rounded-lg shadow-[1px_1px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-          >
-            <Square size={14} />
-            {$t('chapter_export.clear_selection')}
-          </button>
+      <div class="flex flex-col md:flex-row items-start md:justify-between gap-3 mb-5">
+        <div class="flex flex-wrap items-center gap-y-3 gap-x-2">
           <button
             type="button"
             on:click={expandAll}
@@ -170,12 +167,9 @@
             <ChevronsDownUp size={14} />
             {$t('chapter_export.collapse_all')}
           </button>
-          <span class="text-sm text-gray-700 ml-3 mt-2">
-            {$t('chapter_export.selected_count', {values: {count: selectedCount}})}
-          </span>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3 max-w-56 rounded-md bg-gray-50 border border-gray-200 px-2 py-2">
+        <div class="flex flex-wrap items-center gap-3 rounded-md bg-gray-50 border border-gray-200 px-2 py-2">
           <label class="flex items-center gap-2 text-sm font-medium text-black">
             <input
               type="radio"
@@ -197,7 +191,62 @@
         </div>
       </div>
 
-      <div class="relative mb-4">
+      <div class="flex flex-col md:flex-row gap-5 mb-4">
+        <!-- Left Side: Selection Actions -->
+        <div class="w-full md:w-40 flex-shrink-0 flex flex-col gap-2">
+          <div class="grid grid-cols-2 md:grid-cols-1 gap-1 pb-3 border-b border-gray-200 md:pb-0 md:border-b-0">
+            <button
+              type="button"
+              on:click={selectAll}
+              class="inline-flex justify-center md:justify-start items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <CheckSquare size={16} />
+              {$t('chapter_export.select_all')}
+            </button>
+            <button
+              type="button"
+              on:click={clearSelection}
+              class="inline-flex justify-center md:justify-start items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <Square size={16} />
+              {$t('chapter_export.clear_selection')}
+            </button>
+            <button
+              type="button"
+              on:click={selectLevel1Only}
+              class="inline-flex justify-center md:justify-start items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <List size={16} />
+              {$t('chapter_export.select_level_1')}
+            </button>
+            <button
+              type="button"
+              on:click={selectLevel2Only}
+              class="inline-flex justify-center md:justify-start items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <List size={16} />
+              {$t('chapter_export.select_level_2')}
+            </button>
+          </div>
+          
+          <div class="flex flex-col items-center md:items-start gap-1 mt-2 border-t border-gray-200 pt-4 mx-3">
+            <div class="text-sm font-semibold text-gray-700 mb-2">
+              {$t('chapter_export.selected_count', {values: {count: selectedCount}})}
+            </div>
+            <label class="flex items-center gap-2 mt-1 text-sm text-gray-600 cursor-pointer hover:text-black">
+              <input
+                type="checkbox"
+                bind:checked={showSelectedOnly}
+                class="rounded border-gray-300 text-black focus:ring-black accent-black"
+              />
+              {$t('chapter_export.show_selected_only')}
+            </label>
+          </div>
+        </div>
+
+        <!-- Right Side: Search and Tree Box -->
+        <div class="flex-1 min-w-0 flex flex-col gap-3">
+          <div class="relative">
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
           <Search size={18} />
         </div>
@@ -273,6 +322,9 @@
               </div>
             {/each}
           {/if}
+        </div>
+      </div>
+
         </div>
       </div>
 

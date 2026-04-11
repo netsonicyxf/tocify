@@ -220,7 +220,8 @@
         return true;
       } catch (err: any) {
         if (err.name === 'AbortError') return false;
-        throw err;
+        console.warn('showSaveFilePicker failed:', err);
+        // Fall through to blob download
       }
     }
 
