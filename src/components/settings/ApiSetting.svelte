@@ -2,7 +2,7 @@
   import {createEventDispatcher, onMount} from 'svelte';
   import {slide} from 'svelte/transition';
   import {t} from 'svelte-i18n';
-  import {KeyRound, Sparkles} from 'lucide-svelte';
+  import {ExternalLink, Eye, EyeOff, KeyRound, Sparkles} from 'lucide-svelte';
 
   export let isExpanded = false;
 
@@ -16,13 +16,53 @@
   };
 
   let isSaved = false;
+  let showApiKey = false;
+  const providerLinks = {
+    gemini: {
+      label: 'Gemini',
+      href: 'https://aistudio.google.com/app/apikey',
+    },
+    qwen: {
+      label: 'Qwen',
+      href: 'https://bailian.console.aliyun.com/?tab=model#/api-key',
+    },
+    doubao: {
+      label: 'Doubao',
+      href: 'https://www.volcengine.com/docs/82379/1541594?lang=zh',
+    },
+    zhipu: {
+      label: 'Zhipu',
+      href: 'https://open.bigmodel.cn/usercenter/apikeys',
+    },
+  };
+
+  function getEffectiveConfig() {
+    if (!config.provider) {
+      return {
+        provider: '',
+        apiKey: '',
+        doubaoEndpointIdText: '',
+        doubaoEndpointIdVision: '',
+      };
+    }
+
+    return {...config};
+  }
+
+  function getVisibleProviderLinks() {
+    if (config.provider && config.provider in providerLinks) {
+      return [providerLinks[config.provider]];
+    }
+
+    return [];
+  }
 
   onMount(() => {
     const savedConfig = localStorage.getItem('tocify_api_config');
     if (savedConfig) {
       try {
         config = JSON.parse(savedConfig);
-        dispatch('change', config);
+        dispatch('change', getEffectiveConfig());
       } catch (e) {
         console.error('Failed to parse api config', e);
       }
@@ -32,8 +72,9 @@
   function save() {
     localStorage.setItem('tocify_api_config', JSON.stringify(config));
     isSaved = true;
-    dispatch('save', config);
-    dispatch('change', config);
+    const effectiveConfig = getEffectiveConfig();
+    dispatch('save', effectiveConfig);
+    dispatch('change', effectiveConfig);
 
     setTimeout(() => {
       isSaved = false;
@@ -84,18 +125,32 @@
             for="llm_provider">
             <Sparkles size={14} strokeWidth={3} class="inline-block mr-1"/>LLM Provider</label
           >
-          <select
-            id="llm_provider"
-            class="w-full bg-white outline-none text-sm"
-            bind:value={config.provider}
-            on:change={() => (isSaved = false)}
-          >
-            <option value="">Auto</option>
-            <option value="gemini">Gemini</option>
-            <option value="qwen">Qwen</option>
-            <option value="doubao">Doubao</option>
-            <option value="zhipu">Zhipu</option>
-          </select>
+          <div class="flex items-center gap-3">
+            <select
+              id="llm_provider"
+              class="w-full bg-white outline-none text-sm"
+              bind:value={config.provider}
+              on:change={() => (isSaved = false)}
+            >
+              <option value="">Auto</option>
+              <option value="gemini">Gemini</option>
+              <option value="qwen">Qwen</option>
+              <option value="doubao">Doubao</option>
+              <option value="zhipu">Zhipu</option>
+            </select>
+
+            {#each getVisibleProviderLinks() as providerLink}
+              <a
+                href={providerLink.href}
+                target="_blank"
+                rel="noreferrer"
+                class="shrink-0 inline-flex items-center gap-1 text-xs text-gray-600 hover:text-black"
+              >
+                <span>Get Key</span>
+                <ExternalLink size={12} strokeWidth={2.5} />
+              </a>
+            {/each}
+          </div>
         </div>
 
         {#if config.provider === 'doubao'}
@@ -136,25 +191,42 @@
           </div>
         {/if}
 
-        <div class="border-black border-2 rounded-md p-2 w-full">
-          <label
-            class="flex items-center gap-1.5 font-bold mb-1 text-sm"
-            for="api_key"
-            title="Your LLM provider key (stored locally only)"
-          >
-            <KeyRound size={14} strokeWidth={3} />
-           Key
-            <span class="font-normal text-gray-400 text-[11px] ml-2">{$t('settings.api_key_hint')}</span>
-          </label>
-          <input
-            id="api_key"
-            type="password"
-            class="w-full outline-none placeholder:text-gray-400 placeholder:italic [&::placeholder]:text-xs "
-            placeholder={$t('settings.api_key_placeholder')}
-            bind:value={config.apiKey}
-            on:input={() => (isSaved = false)}
-          />
-        </div>
+        {#if config.provider}
+          <div class="border-black border-2 rounded-md p-2 w-full">
+            <label
+              class="flex items-center gap-1.5 font-bold mb-1 text-sm"
+              for="api_key"
+              title="Your LLM provider key (stored locally only)"
+            >
+              <KeyRound size={14} strokeWidth={3} />
+             Key
+              <span class="font-normal text-gray-400 text-[11px] ml-2">{$t('settings.api_key_hint')}</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <input
+                id="api_key"
+                type={showApiKey ? 'text' : 'password'}
+                class="min-w-0 flex-1 outline-none placeholder:text-gray-400 placeholder:italic [&::placeholder]:text-xs "
+                placeholder={$t('settings.api_key_placeholder')}
+                bind:value={config.apiKey}
+                on:input={() => (isSaved = false)}
+              />
+              <button
+                type="button"
+                class="shrink-0 text-gray-500 hover:text-black transition-colors"
+                aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
+                title={showApiKey ? 'Hide API key' : 'Show API key'}
+                on:click={() => (showApiKey = !showApiKey)}
+              >
+                {#if showApiKey}
+                  <EyeOff size={16} strokeWidth={2.5} />
+                {:else}
+                  <Eye size={16} strokeWidth={2.5} />
+                {/if}
+              </button>
+            </div>
+          </div>
+        {/if}
 
         <button
           class="w-full font-bold transition-all duration-200 text-black border-2 border-black rounded px-3 py-2

@@ -12,6 +12,7 @@
     X,
   } from 'lucide-svelte';
   import {t} from 'svelte-i18n';
+  import {processTocDirect} from '$lib/llm/client';
   import TocItem from './TocItem.svelte';
   import Tooltip from './Tooltip.svelte';
   import {tocItems, maxPage, autoSaveEnabled, dragDisabled, curFileFingerprint} from '../stores';
@@ -27,7 +28,12 @@
   export let insertAtPage = 2;
   export let tocPageCount = 0;
 
-  export let apiConfig = {provider: '', apiKey: ''};
+  export let apiConfig = {
+    provider: '',
+    apiKey: '',
+    doubaoEndpointIdText: '',
+    doubaoEndpointIdVision: '',
+  };
   const dispatch = createEventDispatcher();
 
   type FlatTocItem = Omit<TocEntry, 'children'> & {
@@ -456,23 +462,38 @@
     }
 
     isProcessing = true;
-    const response = await fetch('/api/process-toc', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        text: text,
-        apiKey: apiConfig.apiKey,
-        provider: apiConfig.provider,
-      }),
-    });
+    let aiResult;
 
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.message || 'AI processing failed');
+    try {
+      if (apiConfig.apiKey) {
+        aiResult = await processTocDirect({
+          text,
+          apiKey: apiConfig.apiKey,
+          provider: apiConfig.provider,
+          doubaoEndpointIdText: apiConfig.doubaoEndpointIdText,
+          doubaoEndpointIdVision: apiConfig.doubaoEndpointIdVision,
+        });
+      } else {
+        const response = await fetch('/api/process-toc', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            text: text,
+            apiKey: apiConfig.apiKey,
+            provider: apiConfig.provider,
+          }),
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.message || 'AI processing failed');
+        }
+
+        aiResult = await response.json();
+      }
+    } finally {
+      isProcessing = false;
     }
-
-    const aiResult = await response.json();
-    isProcessing = false;
 
     if (Array.isArray(aiResult) && aiResult.length > 0) {
       const nestedItems = buildTree(aiResult);

@@ -2,6 +2,7 @@
   import {tick} from 'svelte';
   import {t} from 'svelte-i18n';
   import rough from 'roughjs';
+  import {generateBoardDirect} from '$lib/llm/client';
   import GraphNode from './GraphNode.svelte';
   import {
     Sparkles,
@@ -16,7 +17,11 @@
   } from 'lucide-svelte';
   import {CARD_W, CARD_H, getRandomPaperColor, computeHierarchicalLayout, getClosestPoints} from '$lib/utils/graph';
   export let items = [];
-  export let apiConfig = {apiKey: ''};
+  export let apiConfig = {
+    provider: '',
+    apiKey: '',
+    doubaoEndpointIdText: '',
+  };
 
   export let title = 'Untitled Book';
 
@@ -78,17 +83,27 @@
     }));
 
     try {
-      const response = await fetch('/api/generate-board', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          tocItems: simplifiedItems,
+      const data = apiConfig.apiKey
+        ? await generateBoardDirect(simplifiedItems, {
           apiKey: apiConfig.apiKey,
-        }),
-      });
+          provider: apiConfig.provider,
+          doubaoEndpointIdText: apiConfig.doubaoEndpointIdText,
+        })
+        : await (async () => {
+          const response = await fetch('/api/generate-board', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              tocItems: simplifiedItems,
+              apiKey: apiConfig.apiKey,
+              provider: apiConfig.provider,
+              doubaoEndpointIdText: apiConfig.doubaoEndpointIdText,
+            }),
+          });
 
-      if (!response.ok) throw new Error('API Failed');
-      const data = await response.json();
+          if (!response.ok) throw new Error('API Failed');
+          return response.json();
+        })();
 
       let nodes = data.nodes.map((n) => ({
         ...n,

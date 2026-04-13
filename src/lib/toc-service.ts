@@ -2,6 +2,8 @@ import type * as PdfjsLibTypes from 'pdfjs-dist';
 import {get} from 'svelte/store';
 import {_} from 'svelte-i18n';
 
+import { processTocDirect } from '$lib/llm/client';
+
 import {pdfService} from '../stores';
 
 export const LARGE_PAGE_THRESHOLD = 8;
@@ -43,6 +45,16 @@ async function fetchChunk(
   doubaoEndpointIdText: string | undefined,
   doubaoEndpointIdVision: string | undefined,
 ): Promise<any[]> {
+  if (apiKey) {
+    return processTocDirect({
+      images,
+      apiKey,
+      provider,
+      doubaoEndpointIdText,
+      doubaoEndpointIdVision,
+    });
+  }
+
   const response = await fetch('/api/process-toc', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
