@@ -8,7 +8,7 @@
   export let showChapterExportModal = false;
   export let chapters: ExportableChapter[] = [];
   export let selectedChapterIds: string[] = [];
-  export let exportMode: 'merge' | 'separate' = 'merge';
+  export let exportMode: 'merge' | 'separate' = 'separate';
 
   const dispatch = createEventDispatcher();
   let expandedIds = new Set<string>();

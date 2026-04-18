@@ -229,17 +229,22 @@ async function requestTextJson(config: DirectApiConfig, systemPrompt: string, us
     );
   }
 
+  const textBody: Record<string, unknown> = {
+    model: getOpenAiCompatTextModel(provider, config),
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userText },
+    ],
+  };
+
+  if (provider !== 'zhipu') {
+    textBody.max_completion_tokens = 4096;
+  }
+
   return fetchOpenAiCompatJson(
     provider,
     config.apiKey,
-    {
-      model: getOpenAiCompatTextModel(provider, config),
-      max_completion_tokens: 4096,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userText },
-      ],
-    },
+    textBody,
     `${ providerLabel(provider) } request failed.`,
   );
 }
@@ -279,26 +284,31 @@ async function requestVisionJson(config: DirectApiConfig, systemPrompt: string, 
     );
   }
 
+  const visionBody: Record<string, unknown> = {
+    model: getOpenAiCompatVisionModel(provider, config),
+    messages: [
+      { role: 'system', content: systemPrompt },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: promptText },
+          ...images.map((image) => ({
+            type: 'image_url',
+            image_url: { url: normalizeImageUrl(image) },
+          })),
+        ],
+      },
+    ],
+  };
+
+  if (provider !== 'zhipu') {
+    visionBody.max_completion_tokens = 4096;
+  }
+
   return fetchOpenAiCompatJson(
     provider,
     config.apiKey,
-    {
-      model: getOpenAiCompatVisionModel(provider, config),
-      max_completion_tokens: 4096,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: promptText },
-            ...images.map((image) => ({
-              type: 'image_url',
-              image_url: { url: normalizeImageUrl(image) },
-            })),
-          ],
-        },
-      ],
-    },
+    visionBody,
     `${ providerLabel(provider) } request failed.`,
   );
 }
@@ -356,7 +366,7 @@ export async function generateBoard(tocItems: GraphNodeInput[], config: DirectAp
       config.apiKey,
       {
         model: getOpenAiCompatTextModel(provider, config),
-        max_completion_tokens: 4096,
+        ...(provider !== 'zhipu' && { max_completion_tokens: 4096 }),
         messages: [
           { role: 'system', content: SYSTEM_PROMPT_GRAPH },
           { role: 'user', content: `ToC Data:\n${ tocText }` },
